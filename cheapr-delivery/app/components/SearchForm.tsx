@@ -116,7 +116,7 @@ export default function SearchForm() {
           value={address}
           onChange={e => setAddress(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSearch()}
-          className="flex-1 min-w-[200px] px-3.5 py-2.5 text-sm border-1 border-white/50 dark:border-white/55 rounded-full bg-white/55 dark:bg-gray-500 text-black placeholder-gray-400 focus:outline-none focus:border-gray-400 dark:focus:border-gray-400 transition-colors"
+          className="flex-1 min-w-[200px] px-3.5 py-2.5 text-sm border-1 border-transparent dark:border-white/55 rounded-full bg-white/55 dark:bg-gray-500 text-black placeholder-gray-400 focus:outline-none focus:border-[#b36200] dark:focus:border-gray-400 transition-colors"
         />
         <input
           type="text"
@@ -124,12 +124,12 @@ export default function SearchForm() {
           value={restaurant}
           onChange={e => setRestaurant(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSearch()}
-          className="flex-1 min-w-[200px] px-3.5 py-2.5 text-sm border-1 border-white/50 dark:border-white/55 rounded-full bg-white/55 dark:bg-gray-500 text-black placeholder-gray-400 focus:outline-none focus:border-gray-400 dark:focus:border-gray-400 transition-colors"
+          className="flex-1 min-w-[200px] px-3.5 py-2.5 text-sm border-1 border-transparent dark:border-white/55 rounded-full bg-white/55 dark:bg-gray-500 text-black placeholder-gray-400 focus:outline-none focus:border-[#b36200] dark:focus:border-gray-400 transition-colors"
         />
         <button
           onClick={handleSearch}
           disabled={running}
-          className="px-5 py-2.5 bg-[#ff3d00] border border-[#cc2200] dark:bg-gray-100 text-white dark:text-gray-400 text-sm font-medium rounded-full disabled:opacity-35 hover:opacity-80 transition-opacity cursor-pointer disabled:cursor-not-allowed whitespace-nowrap"
+          className="px-5 py-2.5 bg-[#ff3d00] border border-transparent dark:bg-gray-100 text-white dark:text-gray-400 text-sm font-bold rounded-full disabled:opacity-35 hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:cursor-not-allowed whitespace-nowrap"
         >
           Compare prices
         </button>
@@ -137,25 +137,25 @@ export default function SearchForm() {
 
       {/* Agent pills */}
       {started && (
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-row gap-2.5 w-full">
           {agents.map(a => <AgentPill key={a.id} agent={a} />)}
         </div>
       )}
 
       {/* Status bar */}
-      <p className="text-[13px] text-gray-500 dark:text-gray-400 min-h-[20px] mb-4">
+      <p className="text-[13px] text-[#b36200] dark:text-gray-400 min-h-[20px] my-2">
         {!started
           ? ''
           : running
           ? `${doneCount} of ${totalAgents} agents complete…`
           : allDone
-          ? "Done. Here's the comparison:"
+          ? "Done! Here's the comparison:"
           : ''}
       </p>
 
       {/* Results */}
       {sortedAgents.length > 0 && (
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-row gap-2.5 w-screen -ml-10 px-6">
           {sortedAgents.map(a => (
             <ResultCard
               key={a.id}
@@ -172,7 +172,7 @@ export default function SearchForm() {
 
       {/* Disclaimer */}
       {started && allDone && (
-        <p className="text-[11px] text-gray-400 dark:text-gray-600 mt-6 leading-relaxed">
+        <p className="text-[11px] text-[#b36200] dark:text-gray-600 mt-3 leading-relaxed w-screen">
           Prices are estimates and may not reflect real-time availability. Fees vary by location,
           time, and membership status. Always confirm totals before placing an order.
         </p>
