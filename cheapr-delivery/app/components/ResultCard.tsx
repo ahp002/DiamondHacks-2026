@@ -15,46 +15,28 @@ export default function ResultCard({ agentState, isWinner }: ResultCardProps) {
   const { label, result, error } = agentState;
 
   return (
-    <div
-      className={`relative rounded-xl p-5 border transition-colors ${
-        isWinner
-          ? 'border-green-500 dark:border-green-600'
-          : 'border-black/10 dark:border-white/10'
-      } bg-white dark:bg-gray-900`}
-    >
+    <div className={`flex-1 min-w-0 relative rounded-2xl p-4 border transition-colors ${
+      isWinner ? 'border-[#ff3d00] border-2 bg-white/80' : 'border-black/10 bg-white/60'
+    }`}>
       {isWinner && (
-        <span className="absolute top-3 right-4 text-[11px] font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400 px-2.5 py-0.5 rounded-full">
+        <span className="inline-block text-[10px] font-bold bg-[#ff3d00]/10 text-[#cc2200] px-2.5 py-1 rounded-full mb-2">
           lowest price
         </span>
       )}
 
-      <p className="text-[15px] font-medium mb-1">{label}</p>
+      <p className="text-[13px] font-semibold text-[#1a1a1a] mb-1">{label}</p>
 
       {error || !result ? (
-        <>
-          <p className="text-base text-gray-400 dark:text-gray-500 mb-2">Unavailable</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 border-t border-black/5 dark:border-white/5 pt-2.5 mt-2.5 leading-relaxed">
-            {error ?? 'No data returned.'}
-          </p>
-        </>
+        <p className="text-sm text-[#7a4000]">Unavailable</p>
       ) : (
         <>
-          <p className="text-2xl font-medium mb-2">
+          <p className={`text-3xl font-bold text-[#1a1a1a] mb-3`}>
             {fmt(result.total)}
-            <span className="text-sm font-normal text-gray-400 dark:text-gray-500 ml-1">estimated total</span>
           </p>
-
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-gray-500 dark:text-gray-400">
-            <span>Subtotal <strong className="text-gray-900 dark:text-gray-100 font-medium">{fmt(result.subtotal)}</strong></span>
-            <span>Delivery <strong className="text-gray-900 dark:text-gray-100 font-medium">{fmt(result.deliveryFee)}</strong></span>
-            <span>Service fee <strong className="text-gray-900 dark:text-gray-100 font-medium">{fmt(result.serviceFee)}</strong></span>
+          <div className="text-[11px] text-[#7a4000] border-t border-black/8 pt-2 space-y-1">
+            <div>Delivery: <strong className="text-[#1a1a1a]">{fmt(result.deliveryFee)}</strong></div>
+            <div>Service: <strong className="text-[#1a1a1a]">{fmt(result.serviceFee)}</strong></div>
           </div>
-
-          {result.notes && (
-            <p className="text-xs text-gray-400 dark:text-gray-500 border-t border-black/5 dark:border-white/5 pt-2.5 mt-2.5 leading-relaxed">
-              {result.notes}
-            </p>
-          )}
         </>
       )}
     </div>
