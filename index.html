@@ -464,7 +464,13 @@ async function callBrowserUse(task) {
 
     if (data.status === 'finished') {
       const raw   = data.result ?? data.output ?? data.final_result ?? '';
-      const text  = typeof raw === 'string' ? raw : JSON.stringify(raw);
+      let text    = typeof raw === 'string' ? raw : JSON.stringify(raw);
+      // Unwrap double-encoded JSON strings (e.g. "{\"key\":\"value\"}")
+      if (text.startsWith('"') && text.endsWith('"')) {
+        try { text = JSON.parse(text); } catch(e) {}
+      }
+      // Unescape backslash-escaped quotes
+      if (text.includes('\\"')) text = text.replace(/\\"/g, '"');
       // Strip markdown fences
       const clean = text.replace(/```(?:json)?/g, '').trim();
 
