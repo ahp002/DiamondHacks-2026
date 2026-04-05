@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const BROWSER_USE_API_KEY = process.env.BROWSER_USE_API_KEY ?? 'bu_JbTEkVOb3w91bh-qCe8aGpDDs23x3yw7tkg5SY6Yek0';
-const BROWSER_USE_BASE = 'https://api.browser-use.com/api/v2';
+const BROWSER_USE_BASE = 'https://api.browser-use.com/api/v3';
 
 function buildBrowserTask(platformName: string, address: string, restaurant: string): string {
   return `You are a web automation agent. Go to the ${platformName} website. If prompted to sign in, log in with Google using the saved account. Once logged in, search for "${restaurant}" near "${address}". Find the delivery fee, service fee, and estimated total for a standard order (assume ~$15 subtotal).
@@ -40,13 +40,13 @@ export async function POST(request: NextRequest) {
   const task = buildBrowserTask(platform, address, restaurant);
 
   // Submit the task
-  const startResp = await fetch(`${BROWSER_USE_BASE}/tasks`, {
+  const startResp = await fetch(`${BROWSER_USE_BASE}/sessions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'X-Browser-Use-API-Key': BROWSER_USE_API_KEY,
     },
-    body: JSON.stringify({ task, sessionSettings: { profileId: '109a6376-a70c-4157-b56a-b85de9df39d4' } }),
+    body: JSON.stringify({ task, profileId: '109a6376-a70c-4157-b56a-b85de9df39d4' }),
   });
 
   if (!startResp.ok) {
@@ -55,13 +55,13 @@ export async function POST(request: NextRequest) {
   }
 
   const { id } = await startResp.json();
-  if (!id) return NextResponse.json({ error: 'No task ID returned' }, { status: 500 });
+  if (!id) return NextResponse.json({ error: 'No session ID returned' }, { status: 500 });
 
   // Poll until done (max ~5 minutes)
   for (let i = 0; i < 100; i++) {
     await new Promise(r => setTimeout(r, 3000));
 
-    const pollResp = await fetch(`${BROWSER_USE_BASE}/tasks/${id}`, {
+    const pollResp = await fetch(`${BROWSER_USE_BASE}/sessions/${id}`, {
       headers: { 'X-Browser-Use-API-Key': BROWSER_USE_API_KEY },
     });
 
@@ -69,17 +69,20 @@ export async function POST(request: NextRequest) {
 
     const data = await pollResp.json();
 
-    if (data.status === 'finished') {
+    if (data.status === 'stopped') {
+      if (!data.isTaskSuccessful) {
+        return NextResponse.json({ error: 'Agent could not complete the task' }, { status: 500 });
+      }
       try {
-        const result = parseResult(data.result || data.output || '');
+        const result = parseResult(data.output || '');
         return NextResponse.json({ result });
       } catch (e) {
         return NextResponse.json({ error: `Parse failed: ${e instanceof Error ? e.message : e}` }, { status: 500 });
       }
     }
 
-    if (data.status === 'failed' || data.status === 'stopped') {
-      return NextResponse.json({ error: data.error || 'browser-use task failed' }, { status: 500 });
+    if (data.status === 'timed_out' || data.status === 'error') {
+      return NextResponse.json({ error: data.error || 'browser-use session failed' }, { status: 500 });
     }
   }
 
