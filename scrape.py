@@ -28,14 +28,15 @@ async def main():
     url = platform_urls.get(platform.lower(), f"https://www.{platform.lower().replace(' ', '')}.com")
 
     task = f"""Go directly to {url} and immediately search for "{restaurant}" near "{address}". Do not click anything else first.
-Add one item costing ~$15 to the cart, then go to checkout to see the fee breakdown.
-Stop as soon as you have the subtotal, delivery fee, service fee, and total. Do not explore further.
+Add exactly ONE item to the cart (the first available item), then go to checkout.
+At checkout, select "No tip" or $0 tip if the option is available.
+Stop as soon as you have the subtotal, delivery fee, service fee, and total. Do not add more items.
 
 YOUR ENTIRE RESPONSE MUST BE A SINGLE VALID JSON OBJECT — no text before or after it, no markdown, no backticks.
 Use only double quotes. No trailing commas.
 
-Output exactly this shape:
-{{"subtotal":15.00,"deliveryFee":3.99,"serviceFee":1.50,"total":20.49,"notes":"brief note"}}
+Output exactly this shape (total should reflect $0 tip):
+{{"subtotal":15.00,"deliveryFee":3.99,"serviceFee":1.50,"total":20.49,"notes":"brief note, no tip"}}
 
 If you cannot find the restaurant or fees:
 {{"subtotal":null,"deliveryFee":null,"serviceFee":null,"total":null,"notes":"reason"}}"""
