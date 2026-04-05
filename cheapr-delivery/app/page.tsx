@@ -1,25 +1,24 @@
 import SearchForm from './components/SearchForm';
+import { fraunces } from './layout';
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-[#1c1c1a] text-gray-900 dark:text-[#f0efe9]">
-      <header className="border-b border-black/10 dark:border-white/10 px-8 py-4 flex items-center">
+    <div className="min-h-screen flex flex-col items-center justify-center" style={{backgroundColor: '#ffd480'}}>      
+      <header className=" px-8 py-4 flex items-center w-full" style={{backgroundColor: '#ffd480'}}>
         <span className="text-[15px] font-medium tracking-[0.01em]">
-          cheapr<span className="text-gray-400 dark:text-gray-500 font-normal">.delivery</span>
+          <span className="text-black font-bold">Broke</span><span className="text-black font-medium">Bites</span>
         </span>
       </header>
-
-      <main className="flex-1 max-w-[720px] w-full mx-auto px-6 py-12">
-        <h1 className="text-[28px] font-medium leading-snug mb-2">
-          Find the lowest delivery price
+      <main className="flex-1 ml-5 max-w-[800px] w-full mx-auto px-6 pt-48 flex flex-col" style={{backgroundColor: '#ffd480'}}>
+        <h1 className={`${fraunces.className} text-[36px] font-normal leading-snug mb-2`}>
+          Why pay more to eat?
         </h1>
-        <p className="text-[15px] text-gray-500 dark:text-gray-400 mb-8">
-          Agents search multiple apps simultaneously and surface the best deal.
+        <p className="text-[15px] text-[#b36200] mb-5">
+          One Search. Three apps. Best Prices.
         </p>
         <SearchForm />
       </main>
-
-      <footer className="border-t border-black/10 dark:border-white/10 px-8 py-4 text-xs text-gray-400 dark:text-gray-600">
+      <footer className="px-8 py-4 text-xs text-[#b36200] w-full text-center" style={{backgroundColor: '#ffd480'}}>
         cheapr.delivery &mdash; not affiliated with GrubHub, DoorDash, or Uber Eats.
       </footer>
     </div>
