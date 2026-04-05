@@ -109,14 +109,14 @@ export default function SearchForm() {
   return (
     <>
       {/* Input row */}
-      <div className="flex flex-wrap gap-2.5 mb-4">
+      <div className="flex flex-wrap gap-2.5 mb-2">
         <input
           type="text"
           placeholder="Delivery address (e.g. 123 Main St, San Diego, CA)"
           value={address}
           onChange={e => setAddress(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSearch()}
-          className="flex-1 min-w-[200px] px-3.5 py-2.5 text-sm border border-black/20 dark:border-white/20 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-colors"
+          className="flex-1 min-w-[200px] px-3.5 py-2.5 text-sm border-1 border-white/50 dark:border-white/55 rounded-full bg-white/55 dark:bg-gray-500 text-black placeholder-gray-400 focus:outline-none focus:border-gray-400 dark:focus:border-gray-400 transition-colors"
         />
         <input
           type="text"
@@ -124,12 +124,12 @@ export default function SearchForm() {
           value={restaurant}
           onChange={e => setRestaurant(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSearch()}
-          className="flex-1 min-w-[200px] px-3.5 py-2.5 text-sm border border-black/20 dark:border-white/20 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-colors"
+          className="flex-1 min-w-[200px] px-3.5 py-2.5 text-sm border-1 border-white/50 dark:border-white/55 rounded-full bg-white/55 dark:bg-gray-500 text-black placeholder-gray-400 focus:outline-none focus:border-gray-400 dark:focus:border-gray-400 transition-colors"
         />
         <button
           onClick={handleSearch}
           disabled={running}
-          className="px-5 py-2.5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-sm font-medium rounded-lg disabled:opacity-35 hover:opacity-80 transition-opacity cursor-pointer disabled:cursor-not-allowed whitespace-nowrap"
+          className="px-5 py-2.5 bg-[#ff3d00] border border-[#cc2200] dark:bg-gray-100 text-white dark:text-gray-400 text-sm font-medium rounded-full disabled:opacity-35 hover:opacity-80 transition-opacity cursor-pointer disabled:cursor-not-allowed whitespace-nowrap"
         >
           Compare prices
         </button>
