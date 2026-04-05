@@ -463,51 +463,41 @@ async function callBrowserUse(task) {
     const data = await pollResp.json();
 
     if (data.status === 'finished') {
-      const raw   = data.result ?? data.output ?? data.final_result ?? '';
-      let text    = typeof raw === 'string' ? raw : JSON.stringify(raw);
-      // Unwrap double-encoded JSON strings (e.g. "{\"key\":\"value\"}")
-      if (text.startsWith('"') && text.endsWith('"')) {
-        try { text = JSON.parse(text); } catch(e) {}
-      }
-      // Strip markdown fences
-      const clean = text.replace(/```(?:json)?/g, '').trim();
+      // Proxy already parses result into an object — return it directly if so
+      const raw = data.result ?? data.output ?? data.final_result ?? '';
+      if (raw && typeof raw === 'object') return raw;
 
-      // If raw starts with { try parsing directly first (handles already-valid JSON)
-      if (clean.startsWith('{')) {
-        try { return JSON.parse(clean); } catch(e) {}
-        // Try treating as JSON-encoded string (handles {\"key\":\"value\"} format)
-        try { return JSON.parse(JSON.parse('"' + clean + '"')); } catch(e) {}
-      }
+      // Fallback: handle string result
+      let text = String(raw).replace(/```(?:json)?/g, '').trim();
 
-      // Extract all top-level {...} blocks (handles nested braces correctly)
+      // Try direct parse
+      try { return JSON.parse(text); } catch(e) {}
+
+      // Extract all top-level {...} blocks
       const candidates = [];
       let depth = 0, start = -1;
-      for (let j = 0; j < clean.length; j++) {
-        if (clean[j] === '{') { if (depth === 0) start = j; depth++; }
-        else if (clean[j] === '}') {
+      for (let j = 0; j < text.length; j++) {
+        if (text[j] === '{') { if (depth === 0) start = j; depth++; }
+        else if (text[j] === '}') {
           depth--;
-          if (depth === 0 && start !== -1) { candidates.push(clean.slice(start, j + 1)); start = -1; }
+          if (depth === 0 && start !== -1) { candidates.push(text.slice(start, j + 1)); start = -1; }
         }
       }
       if (candidates.length === 0) throw new Error('No JSON in browser-use output');
 
-      // Try each candidate — prefer the one containing our expected keys
       const preferred = candidates.find(s => s.includes('subtotal') || s.includes('deliveryFee')) || candidates[candidates.length - 1];
 
       try {
         return JSON.parse(preferred);
       } catch (e) {
-        // Try treating as JSON-encoded string (handles {\"key\":\"value\"} format)
-        try { return JSON.parse(JSON.parse('"' + preferred + '"')); } catch(e2) {}
-        // Repair keys/trailing commas as last resort
         const fixed = preferred
-          .replace(/,\s*([}\]])/g, '$1')              // trailing commas
-          .replace(/:\s*undefined\b/g, ': null')       // undefined → null
-          .replace(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":'); // unquoted keys only
+          .replace(/,\s*([}\]])/g, '$1')
+          .replace(/:\s*undefined\b/g, ': null')
+          .replace(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":');
         try {
           return JSON.parse(fixed);
-        } catch (e3) {
-          throw new Error(`JSON parse failed: ${e3.message} | raw: ${preferred.slice(0, 120)}`);
+        } catch (e2) {
+          throw new Error(`JSON parse failed: ${e2.message} | raw: ${preferred.slice(0, 120)}`);
         }
       }
     }
