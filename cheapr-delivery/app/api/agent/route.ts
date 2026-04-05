@@ -44,10 +44,10 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // 5-minute timeout
+    // 10-minute timeout
     setTimeout(() => {
       proc.kill();
-      resolve(NextResponse.json({ error: 'Agent timed out after 5 minutes' }, { status: 504 }));
-    }, 5 * 60 * 1000);
+      resolve(NextResponse.json({ error: 'Agent timed out after 10 minutes' }, { status: 504 }));
+    }, 10 * 60 * 1000);
   });
 }

@@ -39,7 +39,7 @@ If you cannot find the restaurant or fees:
 
     try:
         agent = Agent(task=task, llm=llm, browser_profile=profile)
-        history = await agent.run(max_steps=50)
+        history = await agent.run(max_steps=100)
         text = history.final_result() or ""
     except Exception as e:
         print(json.dumps({"error": str(e)}))
