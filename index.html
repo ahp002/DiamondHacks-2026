@@ -469,10 +469,15 @@ async function callBrowserUse(task) {
       if (text.startsWith('"') && text.endsWith('"')) {
         try { text = JSON.parse(text); } catch(e) {}
       }
-      // Unescape backslash-escaped quotes
-      if (text.includes('\\"')) text = text.replace(/\\"/g, '"');
       // Strip markdown fences
       const clean = text.replace(/```(?:json)?/g, '').trim();
+
+      // If raw starts with { try parsing directly first (handles already-valid JSON)
+      if (clean.startsWith('{')) {
+        try { return JSON.parse(clean); } catch(e) {}
+        // Try treating as JSON-encoded string (handles {\"key\":\"value\"} format)
+        try { return JSON.parse(JSON.parse('"' + clean + '"')); } catch(e) {}
+      }
 
       // Extract all top-level {...} blocks (handles nested braces correctly)
       const candidates = [];
@@ -492,16 +497,17 @@ async function callBrowserUse(task) {
       try {
         return JSON.parse(preferred);
       } catch (e) {
-        // Only repair keys/trailing commas — do NOT touch string content
-        // Replace unquoted keys: , key: or { key: but not inside strings
+        // Try treating as JSON-encoded string (handles {\"key\":\"value\"} format)
+        try { return JSON.parse(JSON.parse('"' + preferred + '"')); } catch(e2) {}
+        // Repair keys/trailing commas as last resort
         const fixed = preferred
           .replace(/,\s*([}\]])/g, '$1')              // trailing commas
           .replace(/:\s*undefined\b/g, ': null')       // undefined → null
           .replace(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":'); // unquoted keys only
         try {
           return JSON.parse(fixed);
-        } catch (e2) {
-          throw new Error(`JSON parse failed: ${e2.message} | raw: ${preferred.slice(0, 120)}`);
+        } catch (e3) {
+          throw new Error(`JSON parse failed: ${e3.message} | raw: ${preferred.slice(0, 120)}`);
         }
       }
     }
@@ -622,7 +628,7 @@ async function runSearch() {
     let result = null, error = null;
     try {
       result = await agent.run(address, restaurant);
-      setPillState(agent.id, 'done');
+      setPillState(agent.id, result && result.total != null ? 'done' : 'error');
     } catch (e) {
       error = e.message || 'Agent failed.';
       setPillState(agent.id, 'error');
