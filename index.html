@@ -264,6 +264,7 @@
 
     /* No extra CSS needed for agent config — it's all in the JS below */
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -329,6 +330,43 @@
    Throw an Error to mark the agent as failed (shown with a red dot).
 
    ================================================================ */
+
+const supabase = window.supabase.createClient(
+  'https://ucoxxqwbxshpoechnesk.supabase.co',
+  'sb_publishable_9KALTSNrmaE2G1qHlL5oSA_cv0PaqxC'
+)
+
+const CACHE_MINUTES = 30
+
+function normalize(str) { return str.trim().toLowerCase() }
+
+async function getCached(address, restaurant) {
+  const cutoff = new Date(Date.now() - CACHE_MINUTES * 60 * 1000).toISOString()
+  const { data, error } = await supabase
+    .from('price_lookups')
+    .select('*')
+    .eq('address',    normalize(address))
+    .eq('restaurant', normalize(restaurant))
+    .gte('searched_at', cutoff)
+    .order('searched_at', { ascending: false })
+  if (error || !data?.length) return null
+  return data
+}
+
+async function saveResult(address, restaurant, platform, result) {
+  const { error } = await supabase.from('price_lookups').insert({
+    platform,
+    address:      normalize(address),
+    restaurant:   normalize(restaurant),
+    subtotal:     result.subtotal,
+    delivery_fee: result.deliveryFee,
+    service_fee:  result.serviceFee,
+    total:        result.total,
+    notes:        result.notes,
+    searched_at:  new Date().toISOString()
+  })
+  if (error) console.error('Supabase save error:', error.message)
+}
 
 const AGENTS = [
 
@@ -590,7 +628,7 @@ function renderResults(results) {
   document.getElementById('disc').style.display = 'block';
 }
 
-async function runSearch() {
+async function runSearch(forceAgents = false) {
   if (running) return;
 
   const address    = document.getElementById('address').value.trim();
@@ -602,6 +640,30 @@ async function runSearch() {
   }
 
   running = true;
+
+// Check cache first
+if (!forceAgents) {
+  setStatus('Checking cache…')
+  const cached = await getCached(address, restaurant)
+  if (cached && cached.length > 0) {
+    const results = cached.map(row => ({
+      agent:  { label: row.platform },
+      result: {
+        subtotal:    row.subtotal,
+        deliveryFee: row.delivery_fee,
+        serviceFee:  row.service_fee,
+        total:       row.total,
+        notes:       row.notes
+      },
+      error: null
+    }))
+    setStatus('Loaded from cache.')
+    renderResults(results)
+    running = false
+    document.getElementById('goBtn').disabled = false
+    return
+    }
+  }
   document.getElementById('goBtn').disabled = true;
   document.getElementById('disc').style.display = 'none';
   document.getElementById('results').innerHTML = '';
@@ -621,6 +683,9 @@ async function runSearch() {
     let result = null, error = null;
     try {
       result = await agent.run(address, restaurant);
+      if (result && result.total != null) {
+        await saveResult(address, restaurant, agent.label, result)
+    }
       setPillState(agent.id, result && result.total != null ? 'done' : 'error');
     } catch (e) {
       error = e.message || 'Agent failed.';
