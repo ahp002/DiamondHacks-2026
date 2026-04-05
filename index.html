@@ -402,15 +402,33 @@ const AGENTS = [
    The agent will actually navigate the site and scrape live prices.
    ================================================================ */
 function buildBrowserTask(platformName, address, restaurant) {
-  return `You are a web automation agent. Go to the ${platformName} website and search for "${restaurant}" near "${address}". Find the delivery fee, service fee, and estimated total for a standard order (assume ~$15 subtotal).
+  const urls = {
+    'GrubHub':   'https://www.grubhub.com',
+    'DoorDash':  'https://www.doordash.com',
+    'Uber Eats': 'https://www.ubereats.com',
+  };
+  const url = urls[platformName] || `https://www.${platformName.toLowerCase().replace(' ','')}.com`;
 
-YOUR ENTIRE RESPONSE MUST BE A SINGLE VALID JSON OBJECT — no text before it, no text after it, no markdown, no backticks, no code fences, no explanation. Use only double quotes (not single quotes). No trailing commas.
+  return `Navigate to ${url} and find delivery pricing for "${restaurant}" near "${address}".
 
-Output exactly this shape (replace placeholder values with real numbers or null):
-{"subtotal":15.00,"deliveryFee":3.99,"serviceFee":1.50,"total":20.49,"notes":"Found pricing at the first result for this restaurant."}
+Move slowly and naturally — accept any cookie, location, or notification prompts. If you hit a CAPTCHA or bot-check, wait patiently for it to pass before continuing. Take natural pauses between actions like a real user would.
 
-If you cannot find the restaurant or pricing, output:
-{"subtotal":null,"deliveryFee":null,"serviceFee":null,"total":null,"notes":"Could not find the restaurant or pricing on ${platformName}."}
+IMPORTANT: After typing into any input field, always press Enter or click the confirm/search button to submit. Do not just type and stop — always follow through with Enter or a button click to proceed to the next step.
+
+Steps:
+1. Open the site and dismiss any popups (location permission, cookies, notifications).
+2. Click the address/delivery input, type "${address}", then press Enter or click the confirm button. Wait for the page to update.
+3. Find the search bar, type "${restaurant}", then press Enter or click the search button. Wait for results to load.
+4. Click the first matching restaurant result.
+5. Find the delivery fee, service fee, and subtotal (assume ~$15 subtotal if not shown).
+
+YOUR ENTIRE RESPONSE MUST BE A SINGLE VALID JSON OBJECT — no text before or after, no markdown, no backticks. Use only double quotes. No trailing commas.
+
+Output exactly this shape:
+{"subtotal":15.00,"deliveryFee":3.99,"serviceFee":1.50,"total":20.49,"notes":"Found pricing at the first result."}
+
+If blocked or unable to find pricing:
+{"subtotal":null,"deliveryFee":null,"serviceFee":null,"total":null,"notes":"Blocked or could not find pricing on ${platformName}."}
 
 Output the JSON object now:`;
 }
@@ -421,18 +439,11 @@ Output the JSON object now:`;
    Requires your browser-use API key set in the variable below.
    ================================================================ */
 
-// BROWSER-USE API KEY HERE
-const BROWSER_USE_API_KEY = 'bu_JbTEkVOb3w91bh-qCe8aGpDDs23x3yw7tkg5SY6Yek0';
-const BROWSER_USE_BASE    = 'https://api.browser-use.com/api/v2';
-
 async function callBrowserUse(task) {
-  // 1. Submit the task
-  const startResp = await fetch(`${BROWSER_USE_BASE}/tasks`, {
+  // 1. Submit the task via server-side proxy (keeps API key hidden)
+  const startResp = await fetch('/api/browse', {
     method: 'POST',
-    headers: {
-      'Content-Type':          'application/json',
-      'X-Browser-Use-API-Key': BROWSER_USE_API_KEY
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ task })
   });
 
@@ -448,38 +459,48 @@ async function callBrowserUse(task) {
   for (let i = 0; i < 100; i++) {
     await new Promise(r => setTimeout(r, 3000));
 
-    const pollResp = await fetch(`${BROWSER_USE_BASE}/tasks/${id}`, {
-      headers: { 'X-Browser-Use-API-Key': BROWSER_USE_API_KEY }
-    });
+    const pollResp = await fetch(`/api/poll/${id}`);
 
     if (!pollResp.ok) throw new Error(`Poll error ${pollResp.status}`);
 
     const data = await pollResp.json();
 
     if (data.status === 'finished') {
-      const text  = data.result || data.output || '';
-      // Strip markdown fences and surrounding whitespace
-      const clean = text.replace(/```(?:json)?/g, '').trim();
+      // Proxy already parses result into an object — return it directly if so
+      const raw = data.result ?? data.output ?? data.final_result ?? '';
+      if (raw && typeof raw === 'object') return raw;
 
-      // Find the outermost JSON object
-      const match = clean.match(/\{[\s\S]*\}/);
-      if (!match) throw new Error('No JSON in browser-use output');
+      // Fallback: handle string result
+      let text = String(raw).replace(/```(?:json)?/g, '').trim();
 
-      // Try parsing as-is first, then attempt common repairs
-      let raw = match[0];
+      // Try direct parse
+      try { return JSON.parse(text); } catch(e) {}
+
+      // Extract all top-level {...} blocks
+      const candidates = [];
+      let depth = 0, start = -1;
+      for (let j = 0; j < text.length; j++) {
+        if (text[j] === '{') { if (depth === 0) start = j; depth++; }
+        else if (text[j] === '}') {
+          depth--;
+          if (depth === 0 && start !== -1) { candidates.push(text.slice(start, j + 1)); start = -1; }
+        }
+      }
+      if (candidates.length === 0) throw new Error('No JSON in browser-use output');
+
+      const preferred = candidates.find(s => s.includes('subtotal') || s.includes('deliveryFee')) || candidates[candidates.length - 1];
+
       try {
-        return JSON.parse(raw);
-      } catch (e1) {
-        // Repair: single quotes → double quotes, trailing commas, unquoted keys
-        let fixed = raw
-          .replace(/'/g, '"')                        // single → double quotes
-          .replace(/,\s*([}\]])/g, '$1')             // trailing commas
-          .replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":') // unquoted keys
-          .replace(/:\s*undefined/g, ': null');       // undefined → null
+        return JSON.parse(preferred);
+      } catch (e) {
+        const fixed = preferred
+          .replace(/,\s*([}\]])/g, '$1')
+          .replace(/:\s*undefined\b/g, ': null')
+          .replace(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":');
         try {
           return JSON.parse(fixed);
         } catch (e2) {
-          throw new Error(`JSON parse failed: ${e2.message}`);
+          throw new Error(`JSON parse failed: ${e2.message} | raw: ${preferred.slice(0, 120)}`);
         }
       }
     }
@@ -600,7 +621,7 @@ async function runSearch() {
     let result = null, error = null;
     try {
       result = await agent.run(address, restaurant);
-      setPillState(agent.id, 'done');
+      setPillState(agent.id, result && result.total != null ? 'done' : 'error');
     } catch (e) {
       error = e.message || 'Agent failed.';
       setPillState(agent.id, 'error');
