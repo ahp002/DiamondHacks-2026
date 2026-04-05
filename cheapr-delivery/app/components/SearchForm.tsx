@@ -149,7 +149,7 @@ export default function SearchForm() {
 
       {/* Savings callout */}
       {allDone && completed.length > 1 && minTotal !== null && (
-        <div className="mb-4 px-4 py-3 rounded-full bg-white/60 border border-[#ff3d00]/30 inline-flex items-center gap-2">
+        <div className="mb-4 px-4 py-3 rounded-full bg-white/60 border border-transparent inline-flex items-center gap-2">
           <span style={{fontSize: '16px'}}>🎉</span>
           <p className="text-sm font-semibold text-[#1a1a1a]">
             You save <span className="text-[#ff3d00]">${(Math.max(...completed.map(a => a.result!.total!)) - minTotal).toFixed(2)}</span> by choosing the cheapest option!

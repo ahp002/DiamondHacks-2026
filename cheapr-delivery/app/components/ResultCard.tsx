@@ -16,10 +16,10 @@ export default function ResultCard({ agentState, isWinner }: ResultCardProps) {
 
   return (
     <div className={`flex-1 min-w-0 relative rounded-2xl p-4 border transition-colors ${
-      isWinner ? 'border-[#ff3d00] border-2 bg-white/80' : 'border-black/10 bg-white/60'
+      isWinner ? 'border-green-500 border-2 bg-white/80' : 'border-black/10 bg-white/60'
     }`}>
       {isWinner && (
-        <span className="inline-block text-[10px] font-bold bg-[#ff3d00]/10 text-[#cc2200] px-2.5 py-1 rounded-full mb-2">
+        <span className="inline-block text-[10px] font-bold bg-green-100 text-green-700 px-2.5 py-1 rounded-full mb-2">
           lowest price
         </span>
       )}
