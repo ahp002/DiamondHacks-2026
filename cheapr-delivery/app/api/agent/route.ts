@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       'Content-Type': 'application/json',
       'X-Browser-Use-API-Key': BROWSER_USE_API_KEY,
     },
-    body: JSON.stringify({ task, browser_profile_id: '109a6376-a70c-4157-b56a-b85de9df39d4' }),
+    body: JSON.stringify({ task, sessionSettings: { profileId: '109a6376-a70c-4157-b56a-b85de9df39d4' } }),
   });
 
   if (!startResp.ok) {
