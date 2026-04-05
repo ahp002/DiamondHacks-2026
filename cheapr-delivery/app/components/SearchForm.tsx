@@ -110,7 +110,7 @@ export default function SearchForm() {
           value={address}
           onChange={e => setAddress(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSearch()}
-          className="flex-1 min-w-[200px] px-3.5 py-2.5 text-sm border-1 border-transparent dark:border-white/55 rounded-full bg-white/55 dark:bg-gray-500 text-black placeholder-gray-400 focus:outline-none focus:border-[#b36200] dark:focus:border-gray-400 transition-colors"
+          className="flex-1 min-w-[200px] px-3.5 py-2.5 text-sm border-1 border-transparent rounded-full bg-white/55 text-black placeholder-gray-400 focus:outline-none focus:border-[#b36200] transition-colors"
         />
         <input
           type="text"
@@ -118,12 +118,12 @@ export default function SearchForm() {
           value={restaurant}
           onChange={e => setRestaurant(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSearch()}
-          className="flex-1 min-w-[200px] px-3.5 py-2.5 text-sm border-1 border-transparent dark:border-white/55 rounded-full bg-white/55 dark:bg-gray-500 text-black placeholder-gray-400 focus:outline-none focus:border-[#b36200] dark:focus:border-gray-400 transition-colors"
+          className="flex-1 min-w-[200px] px-3.5 py-2.5 text-sm border-1 border-transparent rounded-full bg-white/55 text-black placeholder-gray-400 focus:outline-none focus:border-[#b36200] transition-colors"
         />
         <button
           onClick={handleSearch}
           disabled={running}
-          className="px-5 py-2.5 bg-[#ff3d00] border border-transparent dark:bg-gray-100 text-white dark:text-gray-400 text-sm font-bold rounded-full disabled:opacity-35 hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:cursor-not-allowed whitespace-nowrap"
+          className="px-5 py-2.5 bg-[#ff3d00] border border-transparent text-white text-sm font-bold rounded-full disabled:opacity-35 hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:cursor-not-allowed whitespace-nowrap"
         >
           Compare prices
         </button>
@@ -137,7 +137,7 @@ export default function SearchForm() {
       )}
 
       {/* Status bar */}
-      <p className="text-[13px] text-[#b36200] dark:text-gray-400 min-h-[20px] my-2">
+      <p className="text-[13px] text-[#b36200] min-h-[20px] my-2">
         {!started
           ? ''
           : running
@@ -166,7 +166,7 @@ export default function SearchForm() {
 
       {/* Disclaimer */}
       {started && allDone && (
-        <p className="text-[11px] text-[#b36200] dark:text-gray-600 mt-3 leading-relaxed w-screen">
+        <p className="text-[11px] text-[#b36200] mt-3 leading-relaxed w-screen">
           Prices are estimates and may not reflect real-time availability. Fees vary by location,
           time, and membership status. Always confirm totals before placing an order.
         </p>
