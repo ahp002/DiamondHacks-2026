@@ -24,13 +24,7 @@ if (data.status === 'finished' && typeof data.result === 'string') {
 
     data.result = parsed;
   } catch (e) {
-    data.result = {
-      subtotal: null,
-      deliveryFee: null,
-      serviceFee: null,
-      total: null,
-      notes: data.result.slice(0, 200)
-    };
+    data.result = { notes: data.result.slice(0, 200) };
   }
 }
 
