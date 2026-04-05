@@ -76,16 +76,9 @@ export default function SearchForm() {
     setDoneCount(0);
     setAgents(makeInitialAgents());
 
-    const promises = AGENT_CONFIGS.map((cfg, i) =>
-      new Promise<void>(resolve =>
-        setTimeout(async () => {
-          await runAgent(cfg, address.trim(), restaurant.trim());
-          resolve();
-        }, i * 300)
-      )
-    );
-
-    await Promise.all(promises);
+    for (const cfg of AGENT_CONFIGS) {
+      await runAgent(cfg, address.trim(), restaurant.trim());
+    }
     setRunning(false);
   }
 
