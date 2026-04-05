@@ -13,23 +13,26 @@ export default async function handler(req, res) {
 
   const data = await response.json();
 
-  if (data.status === 'finished' && typeof data.result === 'string') {
-    let result = data.result.trim();
+if (data.status === 'finished' && typeof data.result === 'string') {
+  try {
+    let parsed = JSON.parse(data.result);
 
-    // browser-use returns double-encoded JSON: {\"key\":\"value\"}
-    // Unescape it so the client gets a real object
-    if (result.includes('\\"')) {
-      result = result.replace(/\\"/g, '"');
+    // Handle double-encoded JSON (string inside a string)
+    if (typeof parsed === 'string') {
+      parsed = JSON.parse(parsed);
     }
 
-    try {
-      data.result = JSON.parse(result);
-    } catch (e) {
-      // If parse still fails, send result as a plain notes string
-      // so the client shows something meaningful instead of an error
-      data.result = { subtotal: null, deliveryFee: null, serviceFee: null, total: null, notes: result.slice(0, 200) };
-    }
+    data.result = parsed;
+  } catch (e) {
+    data.result = {
+      subtotal: null,
+      deliveryFee: null,
+      serviceFee: null,
+      total: null,
+      notes: data.result.slice(0, 200)
+    };
   }
+}
 
   res.status(response.status).json(data);
 }
