@@ -20,7 +20,9 @@ async def main():
     llm = ChatBrowserUse()
 
     # Connect to your local Chrome running with --remote-debugging-port=9222
-    profile = BrowserProfile(cdp_url="http://localhost:9222")
+    port_map = {"doordash": 9222, "grubhub": 9223, "uber eats": 9224}
+    port = port_map.get(platform.lower(), 9222)
+    profile = BrowserProfile(cdp_url=f"http://localhost:{port}")
 
     task = f"""You are a price comparison agent. Go to the {platform} website.
 You should already be logged in. Search for "{restaurant}" near "{address}".

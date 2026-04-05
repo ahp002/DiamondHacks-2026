@@ -76,9 +76,10 @@ export default function SearchForm() {
     setDoneCount(0);
     setAgents(makeInitialAgents());
 
-    for (const cfg of AGENT_CONFIGS) {
-      await runAgent(cfg, address.trim(), restaurant.trim());
-    }
+    const promises = AGENT_CONFIGS.map(cfg =>
+      runAgent(cfg, address.trim(), restaurant.trim())
+    );
+    await Promise.all(promises);
     setRunning(false);
   }
 
