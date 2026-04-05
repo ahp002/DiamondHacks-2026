@@ -4,7 +4,7 @@ const BROWSER_USE_API_KEY = process.env.BROWSER_USE_API_KEY ?? 'bu_JbTEkVOb3w91b
 const BROWSER_USE_BASE = 'https://api.browser-use.com/api/v2';
 
 function buildBrowserTask(platformName: string, address: string, restaurant: string): string {
-  return `You are a web automation agent. Go to the ${platformName} website and search for "${restaurant}" near "${address}". Find the delivery fee, service fee, and estimated total for a standard order (assume ~$15 subtotal).
+  return `You are a web automation agent. Go to the ${platformName} website. If prompted to sign in, log in with Google using the saved account. Once logged in, search for "${restaurant}" near "${address}". Find the delivery fee, service fee, and estimated total for a standard order (assume ~$15 subtotal).
 
 YOUR ENTIRE RESPONSE MUST BE A SINGLE VALID JSON OBJECT — no text before it, no text after it, no markdown, no backticks, no code fences, no explanation. Use only double quotes (not single quotes). No trailing commas.
 
