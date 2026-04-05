@@ -24,9 +24,12 @@ async def main():
     port = port_map.get(platform.lower(), 9222)
     profile = BrowserProfile(cdp_url=f"http://localhost:{port}")
 
-    task = f"""You are a price comparison agent. Go to the {platform} website.
-You should already be logged in. Search for "{restaurant}" near "{address}".
-Open the restaurant page and find the delivery fee, service fee, subtotal, and estimated total for a ~$15 order.
+    platform_urls = {"doordash": "https://www.doordash.com", "grubhub": "https://www.grubhub.com", "uber eats": "https://www.ubereats.com"}
+    url = platform_urls.get(platform.lower(), f"https://www.{platform.lower().replace(' ', '')}.com")
+
+    task = f"""Go directly to {url} and immediately search for "{restaurant}" near "{address}". Do not click anything else first.
+Add one item costing ~$15 to the cart, then go to checkout to see the fee breakdown.
+Stop as soon as you have the subtotal, delivery fee, service fee, and total. Do not explore further.
 
 YOUR ENTIRE RESPONSE MUST BE A SINGLE VALID JSON OBJECT — no text before or after it, no markdown, no backticks.
 Use only double quotes. No trailing commas.
