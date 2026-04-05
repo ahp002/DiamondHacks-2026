@@ -5,6 +5,68 @@ import { AgentState } from '../types';
 import AgentPill from './AgentPill';
 import ResultCard from './ResultCard';
 
+const SUPABASE_URL = 'https://ucoxxqwbxshpoechnesk.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_9KALTSNrmaE2G1qHlL5oSA_cv0PaqxC';
+const CACHE_MINUTES = 30;
+
+function normalize(str: string) { return str.trim().toLowerCase(); }
+
+async function getCached(address: string, restaurant: string): Promise<AgentState[] | null> {
+  const cutoff = new Date(Date.now() - CACHE_MINUTES * 60 * 1000).toISOString();
+  const params = new URLSearchParams({
+    address:     `eq.${normalize(address)}`,
+    restaurant:  `eq.${normalize(restaurant)}`,
+    searched_at: `gte.${cutoff}`,
+    order:       'searched_at.desc',
+  });
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/price_lookups?${params}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data?.length) return null;
+    return data.map((row: any) => ({
+      id:     row.platform.toLowerCase().replace(' ', ''),
+      label:  row.platform,
+      status: 'done' as const,
+      result: {
+        subtotal:    row.subtotal,
+        deliveryFee: row.delivery_fee,
+        serviceFee:  row.service_fee,
+        total:       row.total,
+        notes:       row.notes,
+      },
+      error: null,
+    }));
+  } catch { return null; }
+}
+
+async function saveResult(address: string, restaurant: string, platform: string, result: AgentState['result']) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/price_lookups`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({
+        platform,
+        address:      normalize(address),
+        restaurant:   normalize(restaurant),
+        subtotal:     result?.subtotal,
+        delivery_fee: result?.deliveryFee,
+        service_fee:  result?.serviceFee,
+        total:        result?.total,
+        notes:        result?.notes,
+        searched_at:  new Date().toISOString(),
+      }),
+    });
+  } catch (e) { console.error('Supabase save error:', e); }
+}
+
 /* ──────────────────────────────────────────────
    AGENT DEFINITIONS
    Add or remove agents here. Each agent needs:
@@ -35,6 +97,7 @@ export default function SearchForm() {
   const [running, setRunning]       = useState(false);
   const [started, setStarted]       = useState(false);
   const [doneCount, setDoneCount]   = useState(0);
+  const [fromCache, setFromCache]   = useState(false);
 
   function updateAgent(id: string, patch: Partial<AgentState>) {
     setAgents(prev => prev.map(a => a.id === id ? { ...a, ...patch } : a));
@@ -57,6 +120,9 @@ export default function SearchForm() {
       }
 
       updateAgent(cfg.id, { status: 'done', result: data.result });
+      if (data.result?.total != null) {
+        await saveResult(addr, rest, cfg.platform, data.result);
+      }
     } catch (e) {
       updateAgent(cfg.id, {
         status: 'error',
@@ -74,6 +140,18 @@ export default function SearchForm() {
     setRunning(true);
     setStarted(true);
     setDoneCount(0);
+
+    // Check Supabase cache first
+    const cached = await getCached(address.trim(), restaurant.trim());
+    if (cached && cached.length > 0) {
+      setAgents(cached);
+      setDoneCount(AGENT_CONFIGS.length);
+      setFromCache(true);
+      setRunning(false);
+      return;
+    }
+    setFromCache(false);
+
     setAgents(makeInitialAgents());
 
     const promises = AGENT_CONFIGS.map(cfg =>
@@ -143,7 +221,9 @@ export default function SearchForm() {
           : running
           ? `${doneCount} of ${totalAgents} agents complete…`
           : allDone
-          ? "Done! Here's the comparison:"
+          ? fromCache
+            ? "Loaded from cache. Here's the comparison:"
+            : "Done! Here's the comparison:"
           : ''}
       </p>
 

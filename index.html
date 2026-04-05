@@ -330,6 +330,56 @@
 
    ================================================================ */
 
+/* ── Supabase cache (no SDK — plain fetch) ── */
+const SUPABASE_URL = 'https://ucoxxqwbxshpoechnesk.supabase.co'
+const SUPABASE_KEY = 'sb_publishable_9KALTSNrmaE2G1qHlL5oSA_cv0PaqxC'
+const CACHE_MINUTES = 30
+
+function normalize(str) { return str.trim().toLowerCase() }
+
+async function getCached(address, restaurant) {
+  const cutoff = new Date(Date.now() - CACHE_MINUTES * 60 * 1000).toISOString()
+  const params = new URLSearchParams({
+    address:     `eq.${normalize(address)}`,
+    restaurant:  `eq.${normalize(restaurant)}`,
+    searched_at: `gte.${cutoff}`,
+    order:       'searched_at.desc'
+  })
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/price_lookups?${params}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data?.length ? data : null
+  } catch { return null }
+}
+
+async function saveResult(address, restaurant, platform, result) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/price_lookups`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify({
+        platform,
+        address:      normalize(address),
+        restaurant:   normalize(restaurant),
+        subtotal:     result.subtotal,
+        delivery_fee: result.deliveryFee,
+        service_fee:  result.serviceFee,
+        total:        result.total,
+        notes:        result.notes,
+        searched_at:  new Date().toISOString()
+      })
+    })
+  } catch (e) { console.error('Supabase save error:', e.message) }
+}
+
 const AGENTS = [
 
   /* ──────────────────────────────────────────────────────────────
@@ -605,8 +655,30 @@ async function runSearch() {
   document.getElementById('goBtn').disabled = true;
   document.getElementById('disc').style.display = 'none';
   document.getElementById('results').innerHTML = '';
-  document.getElementById('agentPills').style.display = 'flex';
 
+  // Check Supabase cache first
+  setStatus('Checking cache…');
+  const cached = await getCached(address, restaurant);
+  if (cached && cached.length > 0) {
+    const cachedResults = cached.map(row => ({
+      agent:  { label: row.platform },
+      result: {
+        subtotal:    row.subtotal,
+        deliveryFee: row.delivery_fee,
+        serviceFee:  row.service_fee,
+        total:       row.total,
+        notes:       row.notes
+      },
+      error: null
+    }));
+    setStatus('Loaded from cache.');
+    renderResults(cachedResults);
+    running = false;
+    document.getElementById('goBtn').disabled = false;
+    return;
+  }
+
+  document.getElementById('agentPills').style.display = 'flex';
   buildPills();
   AGENTS.forEach(a => setPillState(a.id, ''));
   setStatus('Dispatching agents…');
@@ -621,6 +693,9 @@ async function runSearch() {
     let result = null, error = null;
     try {
       result = await agent.run(address, restaurant);
+      if (result && result.total != null) {
+        await saveResult(address, restaurant, agent.label, result);
+      }
       setPillState(agent.id, result && result.total != null ? 'done' : 'error');
     } catch (e) {
       error = e.message || 'Agent failed.';
